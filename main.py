@@ -1,91 +1,82 @@
 import cv2  # pip install opencv-python
 import numpy as np
 import tensorflow as tf
+import time
+import matplotlib.pyplot as plt
+from collections import Counter
+from emotiongraph import EmotionGraph
+import utils
 
-#{0: 'Neutral', 1: 'Happy', 2: 'fear', 3: 'Angry'}
-path = "FinalModel.h5"
-new_model = tf.keras.models.load_model(path)
 
+import warnings
+warnings.filterwarnings("ignore") #added for presentation purposes,
+                                  #diregards deprecation warnings for some of the functions used
 
-def webcam_emotion(new_model):
-    print("opening webcam...")
-    cap = cv2.VideoCapture(0)
-    # Check if the webcam is opened correctly
-    if not cap.isOpened():
-        cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        raise IOError("Cannot open webcam")
-    print("webcam opened")
+path = "FinalModel.h5"  #path to the model
+
+mapping = {0: "Angry", 1: "Happy", 2: "Neutral", 3: "Fear"}
+#angry - negative, happy - positive, neutral - neutral, fearful - negative
+
+def main():
+    print("The emotion mapping used is the following: angry - negative, happy - positive, neutral - neutral, fearful - negative")
     while True:
-        ret, frame = cap.read()
-        # eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
-        faceCascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        # print(faceCascade.empty())
-        faces = faceCascade.detectMultiScale(gray, 1.1, 4)
-        for x, y, w, h in faces:
-            roi_gray = gray[y:y + h, x:x + w]
-            roi_color = frame[y:y + h, x:x + w]
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-            facess = faceCascade.detectMultiScale(roi_gray)
-            if len(facess) == 0:
-                print("Face not detected")
-            else:
-                for (ex, ey, ew, eh) in facess:
-                    face_roi = roi_color[ey: ey + eh, ex:ex + ew]  ## cropping the face
-                    #face_roi = face_roi/255.
-                    final_image = cv2.resize(face_roi, (48, 48))
-                    final_image = np.expand_dims(final_image, axis=0)  ## need fourth dimension
-                    final_image = final_image / 255.0
-                    font = cv2.FONT_HERSHEY_SIMPLEX
-                    Predictions = new_model.predict(final_image)
-                    font_scale = 1.5
-                    font = cv2.FONT_HERSHEY_PLAIN
-                    if (np.argmax(Predictions) == 0):
-                        status = "Neutral"
-                        x1, y1, w1, h1 = 0, 0, 175, 75
-                        # Draw black background rectangle
-                        cv2.rectangle(frame, (x1, x1), (x1 + w1, y1 + h1), (0, 0, 0), -1)
-                        # Addd text
-                        cv2.putText(frame, status, (x1 + int(w1 / 10), y1 + int(h1 / 2)), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                                    (0, 0, 255), 2)
-                        cv2.putText(frame, status, (100, 150), font, 3, (0, 0, 255), 2, cv2.LINE_4)
-                        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255))
-                    elif (np.argmax(Predictions) == 1):
-                        status = "Happy"
-                        x1, y1, w1, h1 = 0, 0, 175, 75
-                        # Draw black background rectangle
-                        cv2.rectangle(frame, (x1, x1), (x1 + w1, y1 + h1), (0, 0, 0), -1)
-                        # Addd text
-                        cv2.putText(frame, status, (x1 + int(w1 / 10), y1 + int(h1 / 2)), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                                    (0, 0, 255), 2)
-                        cv2.putText(frame, status, (100, 150), font, 3, (0, 0, 255), 2, cv2.LINE_4)
-                        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255))
-                    elif (np.argmax(Predictions) == 2):
-                        status = "Fear"
-                        x1, y1, w1, h1 = 0, 0, 175, 75
-                        # Draw black background rectangle
-                        cv2.rectangle(frame, (x1, x1), (x1 + w1, y1 + h1), (0, 0, 0), -1)
-                        # Addd text
-                        cv2.putText(frame, status, (x1 + int(w1 / 10), y1 + int(h1 / 2)), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                                    (0, 0, 255), 2)
-                        cv2.putText(frame, status, (100, 150), font, 3, (0, 0, 255), 2, cv2.LINE_4)
-                        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255))
+        key = input("Enter option: 1 for recording, 2 for plotting an emotion graph, press q to quit\n")
+        if key == "1":
+            utils.emotion_graph(mapping, path, record_graph=True)
+        elif key == "2":
+            graph_path = input("Enter the path of the graph file:\n")
 
-                    elif (np.argmax(Predictions) == 3):
-                        status = "Angry"
-                        x1, y1, w1, h1 = 0, 0, 175, 75
-                        # Draw black background rectangle
-                        cv2.rectangle(frame, (x1, x1), (x1 + w1, y1 + h1), (0, 0, 0), -1)
-                        # Addd text
-                        cv2.putText(frame, status, (x1 + int(w1 / 10), y1 + int(h1 / 2)), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                                    (0, 0, 255), 2)
-                        cv2.putText(frame, status, (100, 150), font, 3, (0, 0, 255), 2, cv2.LINE_4)
-                        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255))
-        cv2.imshow('FER mobilenet v2', frame)
-        if cv2.waitKey(2) & 0xFF == ord('q'):
+            eg = EmotionGraph()
+            eg.readFromFile(graph_path)
+
+            while True:
+                gkey = input("Enter the stats you would like to view, type L to list the available options, q to quit viewing graph mode\n")
+                if gkey == "L":
+                    print("1 - plot Graph")
+                    print("2 - show all stats")
+                    print("3 - show engagement percentage")
+                    print("4 - show positive engagement percentage")
+                    print("5 - show negative engagement percentage")
+                    print("6 - show neutral percentage")
+                    print("7 - show mean")
+                    print("8 - show maximum positive enagement time")
+                    print("9 - show maximum negative engagement time")
+                    print("10 - show maximum engagement time, regardless of classification")
+                    print("11 - show maximum y value")
+                    print("12 - show minimum y value")
+                elif gkey == "1":
+                    eg.plotGraph()
+                elif gkey == "2":
+                    eg.calcAllStats()
+                elif gkey == "3":
+                    eg.calcEngagement()
+                elif gkey == "4":
+                    eg.calcPosPercetage()
+                elif gkey == "5":
+                    eg.calcNegPercetage()
+                elif gkey == "6":
+                    eg.calcNeutralPercentage()
+                elif gkey == "7":
+                    eg.calcMean()
+                elif gkey == "8":
+                    eg.calcMaxPosEngagementTime()
+                elif gkey == "9":
+                    eg.calcMaxNegEngagementTime()
+                elif gkey == "10":
+                    eg.calcMaxEngagementTime()
+                elif gkey == "11":
+                    eg.calcMaxPos()
+                elif gkey == "12":
+                    eg.calcMaxNeg()
+                elif gkey == "q":
+                    break
+                else:
+                    print("The key you typed is invalid")
+
+        elif key == "q":
             break
-    cap.release()
-    cv2.destroyAllWindows()
+        else:
+            print("The key you typed is invalid")
 
-webcam_emotion(new_model)
+if __name__ == "__main__":
+    main()
