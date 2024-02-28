@@ -3,8 +3,6 @@ This is an application created using Artificial Intelligence to detect emotions 
 
 <img src="./figs/example2.png" width="300" class="center">
 
-<img src="./figs/example2.png" width="300" class="center">
-
 1. Emotion of detected face
 2. Graph of aggregated results
 3. Bounding box
